@@ -1,0 +1,62 @@
+<html lang="en">
+  <head>
+    <title>Extract video of Samsung Motion Photo</title>
+    <style>
+      body {
+        display: flex;
+        flex-direction: column;
+      }
+
+      video {
+        max-width: 400px;
+      }
+    </style>
+  </head>
+  <body>
+    <input type="file" name="photo_motion" id="input_file" accept="image/*" />
+    <video id="video" controls auto muted loop></video>
+  </body>
+  <script>
+    input_file.addEventListener("change", function(event) {
+      const [file] = event.target.files;
+      const fileReader = new FileReader();
+      fileReader.onloadend = parseMotion;
+      fileReader.readAsArrayBuffer(file);
+    });
+
+    function parseMotion(event) {
+      const buffer = event.target.result;
+      const hexBuffer = bufferToHex(buffer);
+      const magic = stringToHex("MotionPhoto_Data");
+
+      const videoStart = hexBuffer.indexOf(magic) + magic.length;
+      const videoString = hexBuffer.substring(videoStart, hexBuffer.length);
+      const typedArray = new Uint8Array(
+        videoString.match(/[\da-f]{2}/gi).map(function(h) {
+          return parseInt(h, 16);
+        })
+      );
+      const blob = new Blob([typedArray], { type: "video/mp4" });
+      const url = URL.createObjectURL(blob);
+      video.src = url;
+      video.play();
+    }
+
+    function bufferToHex(buffer) {
+      return Array.from(new Uint8Array(buffer))
+        .map(b => b.toString(16).padStart(2, "0"))
+        .join("");
+    }
+
+    function stringToHex(tmp) {
+      var str = "";
+
+      for (let i = 0; i < tmp.length; i += 1) {
+        const c = tmp.charCodeAt(i);
+        str += c.toString(16);
+      }
+
+      return str;
+    }
+  </script>
+</html>
